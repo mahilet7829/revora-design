@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-revora-black: #080800;
+  --color-revora-burgundy: #6E1F2A;
+  --color-revora-burgundy-dark: #4B131C;
+  --color-revora-white: #F5F2ED;
+  --color-revora-charcoal: #252529;
+  --color-revora-gray: #A6A6AA;
+
+  --font-serif: "Syne", system-ui, sans-serif;
+  --font-sans: "Space Grotesk", system-ui, sans-serif;
+}
+
+body {
+  background-color: #080800;
+  color: #F5F2ED;
+}

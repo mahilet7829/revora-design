@@ -5,7 +5,6 @@ import { useCart } from '@/context/CartContext';
 import { createOrder } from '@/services/api';
 import { X, Plus, Minus, Trash2, ShoppingBag, CheckCircle2, MessageCircle } from 'lucide-react';
 
-// Brand WhatsApp number (+251935686396 formatted for wa.me without '+')
 const RAW_WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '251935686396';
 const WHATSAPP_NUMBER = RAW_WHATSAPP.replace(/\D/g, '');
 
@@ -13,6 +12,7 @@ export default function CartDrawer() {
   const { items, isOpen, closeCart, updateQuantity, removeItem, clearCart, subtotal } = useCart();
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
@@ -40,11 +40,12 @@ export default function CartDrawer() {
       ``,
       `*Customer Details:*`,
       `• Name: ${customerName}`,
+      `• Phone: ${customerPhone}`,
       `• Email: ${customerEmail}`,
       `• Delivery Address: ${shippingAddress}`,
     ].join('\n');
 
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${251969774661}?text=${encodeURIComponent(message)}`;
   };
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -54,16 +55,17 @@ export default function CartDrawer() {
     const generatedLink = buildWhatsAppLink();
     setWhatsappUrl(generatedLink);
 
-    // Sync order to database in background without blocking WhatsApp redirect
     try {
       for (const item of items) {
+        const validProductId = String(item.productId || item.id || '').trim();
         await createOrder({
-          productId: item.productId || item.id,
-          quantity: item.quantity,
+          productId: validProductId,
+          quantity: Number(item.quantity),
           size: item.size || 'M',
-          customerName,
-          customerEmail,
-          shippingAddress,
+          customerName: customerName.trim(),
+          customerEmail: customerEmail.trim(),
+          customerPhone: customerPhone.trim(),
+          shippingAddress: shippingAddress.trim(),
         });
       }
     } catch (err) {
@@ -73,7 +75,6 @@ export default function CartDrawer() {
       setOrderComplete(true);
       setSubmitting(false);
 
-      // Open WhatsApp directly to +251935686396
       window.open(generatedLink, '_blank', 'noopener,noreferrer');
     }
   };
@@ -191,6 +192,14 @@ export default function CartDrawer() {
                   placeholder="Full Name"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full bg-revora-charcoal/40 border border-revora-charcoal focus:border-revora-burgundy rounded px-3 py-2.5 text-xs text-revora-white outline-none"
+                />
+                <input
+                  type="tel"
+                  required
+                  placeholder="Phone Number (e.g. +2519...)"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
                   className="w-full bg-revora-charcoal/40 border border-revora-charcoal focus:border-revora-burgundy rounded px-3 py-2.5 text-xs text-revora-white outline-none"
                 />
                 <input

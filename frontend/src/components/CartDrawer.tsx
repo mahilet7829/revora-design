@@ -3,177 +3,187 @@
 import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import { createOrder } from '@/services/api';
-import { X, Plus, Minus, Trash2, ShoppingBag, CheckCircle2, MessageCircle } from 'lucide-react';
+import { X, Trash2, Plus, Minus, MessageCircle, ShoppingBag } from 'lucide-react';
 
 const RAW_WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '251935686396';
 const WHATSAPP_NUMBER = RAW_WHATSAPP.replace(/\D/g, '');
 
 export default function CartDrawer() {
-  const { items, isOpen, closeCart, updateQuantity, removeItem, clearCart, subtotal } = useCart();
+  const {
+    items,
+    isOpen,
+    closeCart,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    totalPrice,
+  } = useCart();
+
   const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [shippingAddress, setShippingAddress] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [orderComplete, setOrderComplete] = useState(false);
-  const [whatsappUrl, setWhatsappUrl] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   if (!isOpen) return null;
 
-  const buildWhatsAppLink = () => {
-    const itemLines = items
-      .map(
-        (item, idx) =>
-          `${idx + 1}. *${item.name}* (Size: ${item.size}) x${item.quantity} — $${(
-            item.price * item.quantity
-          ).toFixed(2)}`
-      )
-      .join('\n');
+  const buildWhatsAppUrl = (savedOrderRefs?: string) => {
+    const itemLines = items.map(
+      (item, idx) =>
+        `${idx + 1}. *${item.name}* — Size: \`${item.size}\` × ${item.quantity} ($${(
+          Number(item.price) * item.quantity
+        ).toFixed(2)})`
+    );
 
-    const message = [
-      `*NEW RÉVORA ORDER* 🖤`,
+    const lines = [
+      `*NEW RÉVORA DESIGN ORDER* 🖤`,
+      ...(savedOrderRefs ? [`*Order Ref(s):* \`#${savedOrderRefs}\``] : []),
+      ``,
+      `*Customer:* ${customerName.trim()}`,
+      `*Phone:* ${customerPhone.trim()}`,
+      ...(customerAddress.trim() ? [`*Delivery:* ${customerAddress.trim()}`] : []),
       ``,
       `*Items:*`,
-      itemLines,
+      ...itemLines,
       ``,
-      `*Total:* $${subtotal.toFixed(2)}`,
-      ``,
-      `*Customer Details:*`,
-      `• Name: ${customerName}`,
-      `• Phone: ${customerPhone}`,
-      `• Email: ${customerEmail}`,
-      `• Delivery Address: ${shippingAddress}`,
-    ].join('\n');
+      `*Subtotal:* $${Number(totalPrice).toFixed(2)}`,
+      ...(notes.trim() ? [``, `*Notes:* ${notes.trim()}`] : []),
+    ];
 
-    return `https://wa.me/${251969774661}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
+    setErrorMsg('');
 
-    const generatedLink = buildWhatsAppLink();
-    setWhatsappUrl(generatedLink);
+    if (items.length === 0) {
+      setErrorMsg('Your shopping bag is empty.');
+      return;
+    }
+
+    setSubmitting(true);
+    const createdIds: string[] = [];
 
     try {
       for (const item of items) {
-        const validProductId = String(item.productId || item.id || '').trim();
-        await createOrder({
-          productId: validProductId,
-          quantity: Number(item.quantity),
-          size: item.size || 'M',
+        const res = await createOrder({
           customerName: customerName.trim(),
-          customerEmail: customerEmail.trim(),
           customerPhone: customerPhone.trim(),
-          shippingAddress: shippingAddress.trim(),
+          productId: item.productId || item.id,
+          size: item.size,
+          quantity: item.quantity,
         });
+        const id = res?.id || res?.data?.id;
+        if (id) createdIds.push(id.slice(0, 8));
       }
     } catch (err) {
-      console.error('Background DB sync warning:', err);
+      console.error('Order persistence notice:', err);
     } finally {
-      clearCart();
-      setOrderComplete(true);
       setSubmitting(false);
-
-      window.open(generatedLink, '_blank', 'noopener,noreferrer');
     }
+
+    const url = buildWhatsAppUrl(createdIds.length > 0 ? createdIds.join(', ') : undefined);
+    clearCart();
+    closeCart();
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-revora-black border-l border-revora-charcoal h-full flex flex-col justify-between p-6 overflow-y-auto">
-        <div>
-          {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-revora-charcoal">
-            <div className="flex items-center gap-2">
-              <ShoppingBag size={18} className="text-revora-burgundy" />
-              <h2 className="font-serif text-lg font-bold tracking-wider uppercase">Your Bag</h2>
-            </div>
-            <button onClick={closeCart} className="text-revora-gray hover:text-revora-white">
-              <X size={20} />
-            </button>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-xs">
+      <div className="w-full max-w-md bg-revora-black border-l border-revora-charcoal h-full flex flex-col justify-between text-revora-white shadow-2xl">
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-revora-charcoal flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <ShoppingBag size={18} className="text-revora-burgundy" />
+            <h2 className="font-serif text-lg font-bold tracking-wider uppercase">
+              Your Bag ({items.reduce((sum, i) => sum + i.quantity, 0)})
+            </h2>
           </div>
+          <button
+            type="button"
+            onClick={closeCart}
+            aria-label="Close bag"
+            className="text-revora-gray hover:text-revora-white p-1 transition-colors cursor-pointer"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
-          {orderComplete ? (
-            <div className="py-16 text-center space-y-5">
-              <CheckCircle2 size={48} className="text-emerald-400 mx-auto" />
-              <h3 className="font-serif text-2xl font-bold">Order Ready on WhatsApp</h3>
-              <p className="text-revora-gray text-xs leading-relaxed max-w-xs mx-auto">
-                Your order has been formatted for RÉVORA (+251 93 568 6396). If WhatsApp did not open automatically, click below.
+        {/* Cart Items & Checkout Form */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          {items.length === 0 ? (
+            <div className="py-20 text-center space-y-2">
+              <p className="font-serif text-xl text-revora-white">Your bag is empty</p>
+              <p className="text-xs text-revora-gray">
+                Explore the collection to add Révora Design pieces.
               </p>
-
-              <div className="flex flex-col gap-3 pt-2">
-                {whatsappUrl && (
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3.5 text-xs uppercase tracking-widest font-semibold rounded transition-colors"
-                  >
-                    <MessageCircle size={16} />
-                    Send Order on WhatsApp
-                  </a>
-                )}
-
-                <button
-                  onClick={() => {
-                    setOrderComplete(false);
-                    closeCart();
-                  }}
-                  className="border border-revora-charcoal hover:border-revora-gray text-revora-gray hover:text-revora-white px-6 py-3 text-xs uppercase tracking-widest rounded transition-colors"
-                >
-                  Continue Exploring
-                </button>
-              </div>
-            </div>
-          ) : items.length === 0 ? (
-            <div className="py-20 text-center text-revora-gray text-sm">
-              Your bag is currently empty.
             </div>
           ) : (
             <>
-              {/* Cart Items */}
-              <div className="divide-y divide-revora-charcoal my-4">
+              <div className="space-y-4">
                 {items.map((item) => (
-                  <div key={`${item.productId || item.id}-${item.size}`} className="py-4 flex gap-4">
-                    <div className="w-16 h-20 bg-revora-charcoal rounded overflow-hidden flex-shrink-0 flex items-center justify-center">
+                  <div
+                    key={`${item.productId || item.id}-${item.size}`}
+                    className="flex gap-4 bg-revora-charcoal/25 border border-revora-charcoal rounded-lg p-3"
+                  >
+                    <div className="w-16 h-20 bg-revora-charcoal/60 rounded overflow-hidden flex-shrink-0 flex items-center justify-center">
                       {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        <span className="font-serif text-xs text-revora-gray/40">R</span>
+                        <span className="font-serif text-xs text-revora-gray/50">RV</span>
                       )}
                     </div>
-                    <div className="flex-grow">
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-semibold text-sm text-revora-white">{item.name}</h4>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-serif text-sm font-bold truncate">
+                          {item.name}
+                        </h3>
                         <button
-                          onClick={() => removeItem(item.productId || item.id, item.size)}
-                          className="text-revora-gray hover:text-red-400"
+                          type="button"
+                          onClick={() => removeItem(item.id, item.size)}
+                          aria-label={`Remove ${item.name}`}
+                          className="text-revora-gray hover:text-red-400 transition-colors cursor-pointer"
                         >
                           <Trash2 size={14} />
                         </button>
                       </div>
-                      <p className="text-[11px] text-revora-gray uppercase tracking-wider mt-0.5">
-                        Size: {item.size}
+
+                      <p className="text-[11px] uppercase tracking-wider text-revora-gray mt-0.5">
+                        Size: <span className="text-revora-white font-semibold">{item.size}</span>
                       </p>
+
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center border border-revora-charcoal rounded">
                           <button
-                            onClick={() => updateQuantity(item.productId || item.id, item.size, -1)}
-                            className="p-1.5 text-revora-gray hover:text-revora-white"
+                            type="button"
+                            onClick={() =>
+                              updateQuantity(item.id, item.size, item.quantity - 1)
+                            }
+                            className="p-1.5 text-revora-gray hover:text-revora-white cursor-pointer"
                           >
                             <Minus size={12} />
                           </button>
-                          <span className="px-2.5 text-xs font-medium">{item.quantity}</span>
+                          <span className="px-2.5 text-xs font-semibold">{item.quantity}</span>
                           <button
-                            onClick={() => updateQuantity(item.productId || item.id, item.size, 1)}
-                            className="p-1.5 text-revora-gray hover:text-revora-white"
+                            type="button"
+                            onClick={() =>
+                              updateQuantity(item.id, item.size, item.quantity + 1)
+                            }
+                            className="p-1.5 text-revora-gray hover:text-revora-white cursor-pointer"
                           >
                             <Plus size={12} />
                           </button>
                         </div>
-                        <span className="text-sm font-semibold">
-                          ${(item.price * item.quantity).toFixed(2)}
+
+                        <span className="text-xs font-semibold text-revora-white">
+                          ${(Number(item.price) * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -181,61 +191,78 @@ export default function CartDrawer() {
                 ))}
               </div>
 
-              {/* Delivery Form */}
-              <form onSubmit={handleCheckout} className="space-y-3 pt-4 border-t border-revora-charcoal">
-                <h3 className="text-xs uppercase tracking-widest text-revora-gray font-semibold">
-                  Delivery Details
-                </h3>
+              <form
+                id="revora-checkout-form"
+                onSubmit={handleCheckout}
+                className="space-y-3 pt-2 border-t border-revora-charcoal"
+              >
+                <p className="text-[11px] uppercase tracking-[0.2em] text-revora-burgundy font-semibold">
+                  Order & Delivery Details
+                </p>
+
                 <input
                   type="text"
                   required
-                  placeholder="Full Name"
+                  placeholder="Full Name *"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full bg-revora-charcoal/40 border border-revora-charcoal focus:border-revora-burgundy rounded px-3 py-2.5 text-xs text-revora-white outline-none"
+                  className="w-full bg-revora-charcoal/30 border border-revora-charcoal focus:border-revora-burgundy rounded px-3 py-2.5 text-xs text-revora-white outline-none"
                 />
+
                 <input
                   type="tel"
                   required
-                  placeholder="Phone Number (e.g. +2519...)"
+                  placeholder="Phone / WhatsApp Number *"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full bg-revora-charcoal/40 border border-revora-charcoal focus:border-revora-burgundy rounded px-3 py-2.5 text-xs text-revora-white outline-none"
+                  className="w-full bg-revora-charcoal/30 border border-revora-charcoal focus:border-revora-burgundy rounded px-3 py-2.5 text-xs text-revora-white outline-none"
                 />
+
                 <input
-                  type="email"
-                  required
-                  placeholder="Email Address"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="w-full bg-revora-charcoal/40 border border-revora-charcoal focus:border-revora-burgundy rounded px-3 py-2.5 text-xs text-revora-white outline-none"
-                />
-                <textarea
-                  rows={2}
-                  required
-                  placeholder="Delivery Address / Location"
-                  value={shippingAddress}
-                  onChange={(e) => setShippingAddress(e.target.value)}
-                  className="w-full bg-revora-charcoal/40 border border-revora-charcoal focus:border-revora-burgundy rounded px-3 py-2.5 text-xs text-revora-white outline-none"
+                  type="text"
+                  placeholder="Delivery Area / Address (e.g., Bole, Addis Ababa)"
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                  className="w-full bg-revora-charcoal/30 border border-revora-charcoal focus:border-revora-burgundy rounded px-3 py-2.5 text-xs text-revora-white outline-none"
                 />
 
-                <div className="pt-3 flex items-center justify-between text-sm font-bold">
-                  <span className="uppercase tracking-wider text-revora-gray text-xs">Total</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
+                <input
+                  type="text"
+                  placeholder="Optional fit or delivery notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full bg-revora-charcoal/30 border border-revora-charcoal focus:border-revora-burgundy rounded px-3 py-2.5 text-xs text-revora-white outline-none"
+                />
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full bg-revora-burgundy hover:bg-revora-burgundy-dark disabled:opacity-50 text-revora-white py-3.5 rounded text-xs uppercase tracking-[0.2em] font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <MessageCircle size={16} />
-                  {submitting ? 'Preparing Order...' : 'Order via WhatsApp'}
-                </button>
+                {errorMsg && <p className="text-xs text-red-400">{errorMsg}</p>}
               </form>
             </>
           )}
         </div>
+
+        {/* Footer */}
+        {items.length > 0 && (
+          <div className="p-6 border-t border-revora-charcoal bg-revora-charcoal/15 space-y-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="uppercase tracking-widest text-xs text-revora-gray">
+                Subtotal
+              </span>
+              <span className="text-lg font-bold text-revora-white">
+                ${Number(totalPrice).toFixed(2)}
+              </span>
+            </div>
+
+            <button
+              type="submit"
+              form="revora-checkout-form"
+              disabled={submitting}
+              className="w-full bg-revora-burgundy hover:bg-revora-burgundy-dark disabled:opacity-50 text-revora-white py-3.5 px-6 rounded text-xs uppercase tracking-[0.2em] font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <MessageCircle size={16} />
+              {submitting ? 'Saving Order...' : 'Confirm & Order on WhatsApp'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,36 +1,25 @@
 {
   "name": "rich_clothing",
   "version": "0.1.0",
-  "private": true,
+  "main": "dist/src/server.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node src/server.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
-    "lint": "eslint",
-    "postinstall": "prisma skills sync || exit 0"
+    "start": "node dist/src/server.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
-    "cors": "^2.8.6",
-    "dotenv": "^18.0.10",
-    "express": "^5.3.0",
-    "lucide-react": "^1.47.0",
-    "next": "16.3.5",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node": "^20.19.43",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.5",
-    "nodemon": "^3.1.14",
-    "prisma": "^6",
-    "ts-node": "^10.9.2",
+    "prisma": "^6.19.3",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }
 }

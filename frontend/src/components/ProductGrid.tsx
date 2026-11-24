@@ -8,9 +8,9 @@ import { ShoppingBag, Check } from 'lucide-react';
 interface Product {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   price: number;
-  imageUrl?: string;
+  imageUrl?: string | null;
   sizes?: string[];
   category?: string;
 }
@@ -31,12 +31,10 @@ export default function ProductGrid({ products }: ProductGridProps) {
       Array.isArray(product.sizes) && product.sizes.length > 0 ? product.sizes[0] : 'M';
 
     addItem({
-      id: product.id,
       productId: product.id,
       name: product.name,
       price: Number(product.price),
       size: defaultSize,
-      quantity: 1,
       imageUrl: product.imageUrl || '',
     });
 

@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { fetchOrders, updateOrderStatus } from '@/services/api';
-import { Package, MessageCircle, Clock, CheckCircle2, Truck, Check } from 'lucide-react';
+import { Package, MessageCircle } from 'lucide-react';
 
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '251911234567';
+type OrderStatusType = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
+
+const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '251935686396').replace(
+  /\D/g,
+  ''
+);
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -14,7 +20,7 @@ export default function AdminOrdersPage() {
   const loadOrders = async () => {
     try {
       const data = await fetchOrders();
-      setOrders(data);
+      setOrders(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -26,7 +32,7 @@ export default function AdminOrdersPage() {
     loadOrders();
   }, []);
 
-  const handleStatusChange = async (orderId: string, newStatus: string) => {
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatusType) => {
     try {
       await updateOrderStatus(orderId, newStatus);
       loadOrders();
@@ -36,8 +42,12 @@ export default function AdminOrdersPage() {
   };
 
   const openCustomerWhatsApp = (order: any) => {
-    const text = `Hi ${order.customerName}, regarding your RÉVORA order (${order.id.slice(0, 6)})...`;
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, '_blank');
+    const text = `Hi ${order.customerName}, regarding your RÉVORA order (#${order.id.slice(0, 6)})...`;
+    window.open(
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   return (
@@ -55,12 +65,12 @@ export default function AdminOrdersPage() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <a
+            <Link
               href="/admin"
               className="text-xs text-revora-gray hover:text-revora-white uppercase tracking-widest transition-colors"
             >
               ← Product Inventory
-            </a>
+            </Link>
             <span className="text-revora-gray text-xs uppercase tracking-widest bg-revora-charcoal px-3 py-1.5 rounded border border-revora-charcoal">
               {orders.length} Total Orders
             </span>
@@ -82,7 +92,7 @@ export default function AdminOrdersPage() {
         ) : (
           <div className="space-y-4">
             {orders.map((order) => {
-              const status = order.status || 'PENDING';
+              const status: OrderStatusType = order.status || 'PENDING';
               return (
                 <div
                   key={order.id}
@@ -96,10 +106,10 @@ export default function AdminOrdersPage() {
                       </span>
                       <span
                         className={`text-[10px] px-2.5 py-0.5 rounded uppercase tracking-wider font-semibold border ${
-                          status === 'DELIVERED'
+                          status === 'COMPLETED'
                             ? 'bg-emerald-950/60 border-emerald-700 text-emerald-300'
-                            : status === 'SHIPPED'
-                            ? 'bg-sky-950/60 border-sky-700 text-sky-300'
+                            : status === 'CANCELLED'
+                            ? 'bg-red-950/60 border-red-700 text-red-300'
                             : status === 'PROCESSING'
                             ? 'bg-amber-950/60 border-amber-700 text-amber-300'
                             : 'bg-revora-black border-revora-charcoal text-revora-gray'
@@ -113,15 +123,15 @@ export default function AdminOrdersPage() {
                       <h3 className="font-serif text-lg font-bold text-revora-white">
                         {order.customerName}
                       </h3>
-                      <p className="text-xs text-revora-gray">{order.customerEmail}</p>
-                      <p className="text-xs text-revora-gray/80 mt-1">
-                        📍 <span className="text-revora-white">{order.shippingAddress}</span>
-                      </p>
+                      <p className="text-xs text-revora-gray">{order.customerPhone}</p>
                     </div>
 
                     <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-revora-gray border-t border-revora-charcoal/60">
                       <span>
-                        Item: <strong className="text-revora-white">{order.product?.name || 'Custom Hoodie'}</strong>
+                        Item:{' '}
+                        <strong className="text-revora-white">
+                          {order.product?.name || 'Custom Hoodie'}
+                        </strong>
                       </span>
                       <span>
                         Size: <strong className="text-revora-white">{order.size || 'M'}</strong>
@@ -135,8 +145,9 @@ export default function AdminOrdersPage() {
                   {/* Actions: Status Dropdown & WhatsApp Chat */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 lg:pt-0 border-t lg:border-t-0 border-revora-charcoal">
                     <button
+                      type="button"
                       onClick={() => openCustomerWhatsApp(order)}
-                      className="inline-flex items-center justify-center gap-2 bg-emerald-950/50 hover:bg-emerald-900/50 border border-emerald-800 text-emerald-300 px-4 py-2.5 rounded text-xs uppercase tracking-wider transition-colors"
+                      className="inline-flex items-center justify-center gap-2 bg-emerald-950/50 hover:bg-emerald-900/50 border border-emerald-800 text-emerald-300 px-4 py-2.5 rounded text-xs uppercase tracking-wider transition-colors cursor-pointer"
                     >
                       <MessageCircle size={14} />
                       WhatsApp Client
@@ -145,13 +156,15 @@ export default function AdminOrdersPage() {
                     <div className="flex items-center gap-2">
                       <select
                         value={status}
-                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        onChange={(e) =>
+                          handleStatusChange(order.id, e.target.value as OrderStatusType)
+                        }
                         className="bg-revora-black border border-revora-charcoal text-revora-white text-xs rounded px-3 py-2.5 outline-none focus:border-revora-burgundy"
                       >
                         <option value="PENDING">Pending</option>
                         <option value="PROCESSING">Processing</option>
-                        <option value="SHIPPED">Shipped</option>
-                        <option value="DELIVERED">Delivered</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
                       </select>
                     </div>
                   </div>

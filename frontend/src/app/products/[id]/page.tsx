@@ -85,15 +85,16 @@ export default function ProductDetailPage() {
   const handleAddToBag = () => {
     if (!product) return;
     const chosenSize = selectedSize || product.sizes?.[0] || 'M';
-    addItem({
-      id: product.id,
-      productId: product.id,
-      name: product.name,
-      price: Number(product.price),
-      imageUrl: product.imageUrl || undefined,
-      size: chosenSize,
-      quantity,
-    });
+    const count = Math.max(1, quantity);
+    for (let i = 0; i < count; i++) {
+      addItem({
+        productId: product.id,
+        name: product.name,
+        price: Number(product.price),
+        imageUrl: product.imageUrl || undefined,
+        size: chosenSize,
+      });
+    }
     openCart();
   };
 

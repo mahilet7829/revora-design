@@ -1,8 +1,18 @@
 import Navbar from '@/components/Navbar';
 import ProductGrid from '@/components/ProductGrid';
+import { fetchProducts, Product } from '@/services/api';
 import Link from 'next/link';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function Home() {
+  let products: Product[] = [];
+  try {
+    products = await fetchProducts();
+  } catch (err) {
+    console.error('Failed to load storefront products:', err);
+  }
+
   return (
     <main className="min-h-screen bg-revora-black text-revora-white">
       <Navbar />
@@ -20,14 +30,14 @@ export default function Home() {
             High-quality hoodies, custom prints, and unique designs made for your style. Wear your story into something real.
           </p>
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link 
-              href="#shop" 
+            <Link
+              href="#shop"
               className="w-full sm:w-auto bg-revora-burgundy hover:bg-revora-burgundy-dark text-revora-white px-8 py-3.5 text-xs uppercase tracking-[0.2em] font-medium transition-all"
             >
               Shop Now
             </Link>
-            <Link 
-              href="#custom" 
+            <Link
+              href="#custom"
               className="w-full sm:w-auto border border-revora-white/20 hover:border-revora-burgundy text-revora-white px-8 py-3.5 text-xs uppercase tracking-[0.2em] font-medium transition-all"
             >
               Custom Design
@@ -37,7 +47,9 @@ export default function Home() {
       </section>
 
       {/* Signature Hoodies Grid (Connected to Backend API) */}
-      <ProductGrid />
+      <section id="shop" className="max-w-7xl mx-auto px-6 lg:px-12 py-20">
+        <ProductGrid products={products} />
+      </section>
 
       {/* Custom Order Banner */}
       <section id="custom" className="py-20 px-6 lg:px-12 bg-revora-charcoal/30 border-t border-revora-charcoal">
@@ -49,7 +61,10 @@ export default function Home() {
               Send us your designs, logos, or ideas—we will bring it to life with premium quality and perfect detail.
             </p>
           </div>
-          <button className="bg-revora-burgundy hover:bg-revora-burgundy-dark text-revora-white px-8 py-4 text-xs uppercase tracking-[0.2em] font-semibold whitespace-nowrap transition-colors">
+          <button
+            type="button"
+            className="bg-revora-burgundy hover:bg-revora-burgundy-dark text-revora-white px-8 py-4 text-xs uppercase tracking-[0.2em] font-semibold whitespace-nowrap transition-colors cursor-pointer"
+          >
             Start Custom Order
           </button>
         </div>

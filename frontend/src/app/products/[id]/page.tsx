@@ -36,7 +36,8 @@ Icon: typeof Heart;
 
 function ProductDetailContent() {
 const params = useParams();
-const id = Array.isArray(params?.id) ? params.id[0] : String(params?.id || '');
+const rawId = params?.id;
+const id = Array.isArray(rawId) ? rawId[0] : String(rawId ?? '');
 
 const { addItem, openCart } = useCart();
 
@@ -70,7 +71,7 @@ setSelectedSize(current.sizes[0]);
 }
 setRelatedProducts(all.filter((p) => p.id !== id).slice(0, 4));
 } catch (err: any) {
-setError(err?.message || 'Unable to load product.');
+setError(err?.message ? String(err.message) : 'Unable to load product.');
 } finally {
 setLoading(false);
 }
@@ -83,14 +84,15 @@ loadProductData();
 
 const handleAddToBag = () => {
 if (!product) return;
-const chosenSize = selectedSize  product.sizes?.[0]  'M';
+const defaultSize = product.sizes?.[0] ? product.sizes[0] : 'M';
+const chosenSize = selectedSize ? selectedSize : defaultSize;
 const count = Math.max(1, quantity);
 for (let i = 0; i < count; i++) {
 addItem({
 productId: product.id,
 name: product.name,
 price: Number(product.price),
-imageUrl: product.imageUrl || undefined,
+imageUrl: product.imageUrl ? product.imageUrl : undefined,
 size: chosenSize,
 });
 }
@@ -98,7 +100,8 @@ openCart();
 };
 
 const handleReaction = async (type: 'LOVE' | 'FIRE' | 'WOW' | 'MEH') => {
-if (!product || reactingType) return;
+if (!product) return;
+if (reactingType) return;
 try {
 setReactingType(type);
 await toggleReaction(product.id, type);
@@ -113,7 +116,9 @@ setReactingType(null);
 
 const handleReviewSubmit = async (e: React.FormEvent) => {
 e.preventDefault();
-if (!product  !reviewerName.trim()  !comment.trim()) return;
+if (!product) return;
+if (!reviewerName.trim()) return;
+if (!comment.trim()) return;
 try {
 setSubmittingReview(true);
 await createReview(product.id, {
@@ -143,11 +148,25 @@ Loading Piece...
 );
 }
 
-if (error || !product) {
+if (error) {
 return (
 <main className="min-h-screen bg-revora-black text-revora-white flex flex-col items-center justify-center gap-4 px-6">
 <p className="font-serif text-2xl">Piece Not Found</p>
-<p className="text-xs text-revora-gray">{error || 'This item may no longer be available.'}</p>
+<p className="text-xs text-revora-gray">{error}</p>
+<Link
+href="/"className="mt-2 inline-flex items-center gap-2 border border-revora-charcoal px-5 py-2.5 text-xs uppercase tracking-widest hover:border-revora-burgundy transition-colors"
+>
+<ArrowLeft size={14} /> Back to Collection
+</Link>
+</main>
+);
+}
+
+if (!product) {
+return (
+<main className="min-h-screen bg-revora-black text-revora-white flex flex-col items-center justify-center gap-4 px-6">
+<p className="font-serif text-2xl">Piece Not Found</p>
+<p className="text-xs text-revora-gray">This item may no longer be available.</p>
 <Link
 href="/"
 className="mt-2 inline-flex items-center gap-2 border border-revora-charcoal px-5 py-2.5 text-xs uppercase tracking-widest hover:border-revora-burgundy transition-colors"
@@ -159,8 +178,8 @@ className="mt-2 inline-flex items-center gap-2 border border-revora-charcoal px-
 }
 
 const availableSizes = product.sizes?.length ? product.sizes : ['S', 'M', 'L', 'XL'];
-const reviews = product.reviews || [];
-const reactions = product.reactions || [];
+const reviews = product.reviews ?? [];
+const reactions = product.reactions ?? [];
 
 return (
 <main className="min-h-screen bg-revora-black text-revora-white pt-24 pb-20 px-6 md:px-12">
@@ -224,7 +243,8 @@ className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] tex
 
           <div className="flex flex-wrap gap-2.5">
             {availableSizes.map((sz) => {
-              const active = (selectedSize || availableSizes[0]) === sz;
+              const currentSize = selectedSize ? selectedSize : availableSizes[0];
+              const active = currentSize === sz;
               return (
                 <button
                   key={sz}
@@ -241,9 +261,7 @@ className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] tex
               );
             })}
           </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 pt-2">
+        </div><div className="flex flex-col sm:flex-row gap-4 pt-2">
           <div className="flex items-center justify-between border border-revora-charcoal rounded px-4 py-3 sm:w-32">
             <button
               type="button"

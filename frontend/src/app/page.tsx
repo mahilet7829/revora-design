@@ -3,7 +3,7 @@ import ProductGrid from '@/components/ProductGrid';
 import { fetchProducts, Product } from '@/services/api';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
+
 
 export default async function Home() {
   let products: Product[] = [];

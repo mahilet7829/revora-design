@@ -1,11 +1,10 @@
+import { Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import ProductGrid from '@/components/ProductGrid';
 import { fetchProducts, Product } from '@/services/api';
 import Link from 'next/link';
 
-
-
-export default async function Home() {
+async function StorefrontProducts() {
   let products: Product[] = [];
   try {
     products = await fetchProducts();
@@ -13,6 +12,10 @@ export default async function Home() {
     console.error('Failed to load storefront products:', err);
   }
 
+  return <ProductGrid products={products} />;
+}
+
+export default function Home() {
   return (
     <main className="min-h-screen bg-revora-black text-revora-white">
       <Navbar />
@@ -48,7 +51,17 @@ export default async function Home() {
 
       {/* Signature Hoodies Grid (Connected to Backend API) */}
       <section id="shop" className="max-w-7xl mx-auto px-6 lg:px-12 py-20">
-        <ProductGrid products={products} />
+        <Suspense
+          fallback={
+            <div className="text-center py-20 border border-revora-charcoal rounded-lg">
+              <p className="text-revora-gray text-xs uppercase tracking-widest">
+                Loading collection...
+              </p>
+            </div>
+          }
+        >
+          <StorefrontProducts />
+        </Suspense>
       </section>
 
       {/* Custom Order Banner */}

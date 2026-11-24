@@ -16,7 +16,7 @@ export default function CartDrawer() {
     updateQuantity,
     removeItem,
     clearCart,
-    totalPrice,
+    subtotal,
   } = useCart();
 
   const [customerName, setCustomerName] = useState('');
@@ -47,7 +47,7 @@ export default function CartDrawer() {
       `*Items:*`,
       ...itemLines,
       ``,
-      `*Subtotal:* $${Number(totalPrice).toFixed(2)}`,
+      `*Subtotal:* $${Number(subtotal).toFixed(2)}`,
       ...(notes.trim() ? [``, `*Notes:* ${notes.trim()}`] : []),
     ];
 
@@ -71,7 +71,7 @@ export default function CartDrawer() {
         const res = await createOrder({
           customerName: customerName.trim(),
           customerPhone: customerPhone.trim(),
-          productId: item.productId || item.id,
+          productId: item.productId,
           size: item.size,
           quantity: item.quantity,
         });
@@ -125,7 +125,7 @@ export default function CartDrawer() {
               <div className="space-y-4">
                 {items.map((item) => (
                   <div
-                    key={`${item.productId || item.id}-${item.size}`}
+                    key={`${item.productId}-${item.size}`}
                     className="flex gap-4 bg-revora-charcoal/25 border border-revora-charcoal rounded-lg p-3"
                   >
                     <div className="w-16 h-20 bg-revora-charcoal/60 rounded overflow-hidden flex-shrink-0 flex items-center justify-center">
@@ -147,7 +147,7 @@ export default function CartDrawer() {
                         </h3>
                         <button
                           type="button"
-                          onClick={() => removeItem(item.id, item.size)}
+                          onClick={() => removeItem(item.productId, item.size)}
                           aria-label={`Remove ${item.name}`}
                           className="text-revora-gray hover:text-red-400 transition-colors cursor-pointer"
                         >
@@ -163,9 +163,7 @@ export default function CartDrawer() {
                         <div className="flex items-center border border-revora-charcoal rounded">
                           <button
                             type="button"
-                            onClick={() =>
-                              updateQuantity(item.id, item.size, item.quantity - 1)
-                            }
+                            onClick={() => updateQuantity(item.productId, item.size, -1)}
                             className="p-1.5 text-revora-gray hover:text-revora-white cursor-pointer"
                           >
                             <Minus size={12} />
@@ -173,9 +171,7 @@ export default function CartDrawer() {
                           <span className="px-2.5 text-xs font-semibold">{item.quantity}</span>
                           <button
                             type="button"
-                            onClick={() =>
-                              updateQuantity(item.id, item.size, item.quantity + 1)
-                            }
+                            onClick={() => updateQuantity(item.productId, item.size, 1)}
                             className="p-1.5 text-revora-gray hover:text-revora-white cursor-pointer"
                           >
                             <Plus size={12} />
@@ -248,7 +244,7 @@ export default function CartDrawer() {
                 Subtotal
               </span>
               <span className="text-lg font-bold text-revora-white">
-                ${Number(totalPrice).toFixed(2)}
+                ${Number(subtotal).toFixed(2)}
               </span>
             </div>
 

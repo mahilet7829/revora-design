@@ -1,93 +1,92 @@
-import { Suspense } from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import ProductGrid from '@/components/ProductGrid';
 import { fetchProducts, Product } from '@/services/api';
 import Link from 'next/link';
 
-async function StorefrontProducts() {
-  let products: Product[] = [];
-  try {
-    products = await fetchProducts();
-  } catch (err) {
-    console.error('Failed to load storefront products:', err);
-  }
-
-  return <ProductGrid products={products} />;
-}
-
 export default function Home() {
-  return (
-    <main className="min-h-screen bg-revora-black text-revora-white">
-      <Navbar />
+const [products, setProducts] = useState<Product[]>([]);
+const [loading, setLoading] = useState(true);
 
-      {/* Hero Section */}
-      <section className="relative h-[85vh] flex items-center justify-center text-center px-6 bg-gradient-to-b from-revora-black via-revora-charcoal/20 to-revora-black border-b border-revora-charcoal">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <span className="text-xs uppercase tracking-[0.4em] text-revora-burgundy font-semibold">
-            Custom Hoodies & Printing
-          </span>
-          <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl tracking-wider text-revora-white leading-tight">
-            YOUR VISION.<br />OUR DESIGN.
-          </h1>
-          <p className="text-revora-gray max-w-xl mx-auto text-sm md:text-base font-light tracking-wide">
-            High-quality hoodies, custom prints, and unique designs made for your style. Wear your story into something real.
-          </p>
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="#shop"
-              className="w-full sm:w-auto bg-revora-burgundy hover:bg-revora-burgundy-dark text-revora-white px-8 py-3.5 text-xs uppercase tracking-[0.2em] font-medium transition-all"
-            >
-              Shop Now
-            </Link>
-            <Link
-              href="#custom"
-              className="w-full sm:w-auto border border-revora-white/20 hover:border-revora-burgundy text-revora-white px-8 py-3.5 text-xs uppercase tracking-[0.2em] font-medium transition-all"
-            >
-              Custom Design
-            </Link>
-          </div>
-        </div>
-      </section>
+useEffect(() => {
+fetchProducts()
+.then((data) => setProducts(Array.isArray(data) ? data : []))
+.catch((err) => console.error('Failed to load storefront products:', err))
+.finally(() => setLoading(false));
+}, []);
 
-      {/* Signature Hoodies Grid (Connected to Backend API) */}
-      <section id="shop" className="max-w-7xl mx-auto px-6 lg:px-12 py-20">
-        <Suspense
-          fallback={
-            <div className="text-center py-20 border border-revora-charcoal rounded-lg">
-              <p className="text-revora-gray text-xs uppercase tracking-widest">
-                Loading collection...
-              </p>
-            </div>
-          }
+return (
+<main className="min-h-screen bg-revora-black text-revora-white">
+<Navbar />
+
+  {/* Hero Section */}
+  <section className="relative h-[85vh] flex items-center justify-center text-center px-6 bg-gradient-to-b from-revora-black via-revora-charcoal/20 to-revora-black border-b border-revora-charcoal">
+    <div className="max-w-4xl mx-auto space-y-6">
+      <span className="text-xs uppercase tracking-[0.4em] text-revora-burgundy font-semibold">
+        Custom Hoodies & Printing
+      </span>
+      <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl tracking-wider text-revora-white leading-tight">
+        YOUR VISION.<br />OUR DESIGN.
+      </h1>
+      <p className="text-revora-gray max-w-xl mx-auto text-sm md:text-base font-light tracking-wide">
+        High-quality hoodies, custom prints, and unique designs made for your style. Wear your story into something real.
+      </p>
+      <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <Link
+          href="#shop"
+          className="w-full sm:w-auto bg-revora-burgundy hover:bg-revora-burgundy-dark text-revora-white px-8 py-3.5 text-xs uppercase tracking-[0.2em] font-medium transition-all"
         >
-          <StorefrontProducts />
-        </Suspense>
-      </section>
+          Shop Now
+        </Link>
+        <Link
+          href="#custom"
+          className="w-full sm:w-auto border border-revora-white/20 hover:border-revora-burgundy text-revora-white px-8 py-3.5 text-xs uppercase tracking-[0.2em] font-medium transition-all"
+        >
+          Custom Design
+        </Link>
+      </div>
+    </div>
+  </section>
 
-      {/* Custom Order Banner */}
-      <section id="custom" className="py-20 px-6 lg:px-12 bg-revora-charcoal/30 border-t border-revora-charcoal">
-        <div className="max-w-5xl mx-auto bg-revora-charcoal p-10 md:p-16 rounded-xl border border-revora-charcoal flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="space-y-4">
-            <span className="text-xs uppercase tracking-[0.3em] text-revora-burgundy">Bring Your Idea to Life</span>
-            <h2 className="font-serif text-2xl md:text-3xl text-revora-white">Custom Print & Embroidery</h2>
-            <p className="text-revora-gray text-sm max-w-md">
-              Send us your designs, logos, or ideas—we will bring it to life with premium quality and perfect detail.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="bg-revora-burgundy hover:bg-revora-burgundy-dark text-revora-white px-8 py-4 text-xs uppercase tracking-[0.2em] font-semibold whitespace-nowrap transition-colors cursor-pointer"
-          >
-            Start Custom Order
-          </button>
-        </div>
-      </section>
+  {/* Signature Hoodies Grid (Connected to Backend API) */}
+  <section id="shop" className="max-w-7xl mx-auto px-6 lg:px-12 py-20">
+    {loading ? (
+      <div className="text-center py-20 border border-revora-charcoal rounded-lg">
+        <p className="text-revora-gray text-xs uppercase tracking-widest animate-pulse">
+          Loading collection...
+        </p>
+      </div>
+    ) : (
+      <ProductGrid products={products} />
+    )}
+  </section>
 
-      {/* Footer */}
-      <footer className="bg-revora-black border-t border-revora-charcoal py-12 px-6 lg:px-12 text-center text-xs text-revora-gray space-y-4">
-        <span className="font-serif text-lg tracking-[0.3em] text-revora-white block">RÉVORA</span>
-        <p className="tracking-widest uppercase">© 2026 Révora Design • Print • Wear. All rights reserved.</p>
-      </footer>
-    </main>
-  );
+  {/* Custom Order Banner */}
+  <section id="custom" className="py-20 px-6 lg:px-12 bg-revora-charcoal/30 border-t border-revora-charcoal">
+    <div className="max-w-5xl mx-auto bg-revora-charcoal p-10 md:p-16 rounded-xl border border-revora-charcoal flex flex-col md:flex-row items-center justify-between gap-8">
+      <div className="space-y-4">
+        <span className="text-xs uppercase tracking-[0.3em] text-revora-burgundy">Bring Your Idea to Life</span>
+        <h2 className="font-serif text-2xl md:text-3xl text-revora-white">Custom Print & Embroidery</h2>
+        <p className="text-revora-gray text-sm max-w-md">
+          Send us your designs, logos, or ideas—we will bring it to life with premium quality and perfect detail.
+        </p>
+      </div>
+      <button
+        type="button"
+        className="bg-revora-burgundy hover:bg-revora-burgundy-dark text-revora-white px-8 py-4 text-xs uppercase tracking-[0.2em] font-semibold whitespace-nowrap transition-colors cursor-pointer"
+      >
+        Start Custom Order
+      </button>
+    </div>
+  </section>
+
+  {/* Footer */}
+  <footer className="bg-revora-black border-t border-revora-charcoal py-12 px-6 lg:px-12 text-center text-xs text-revora-gray space-y-4">
+    <span className="font-serif text-lg tracking-[0.3em] text-revora-white block">RÉVORA</span>
+    <p className="tracking-widest uppercase">© 2026 Révora Design • Print • Wear. All rights reserved.</p>
+  </footer>
+</main>
+);
 }
